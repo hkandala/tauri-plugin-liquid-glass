@@ -6,7 +6,7 @@ use crate::error::Result;
 use crate::models::LiquidGlassConfig;
 
 #[cfg(target_os = "macos")]
-use crate::macos;
+use crate::glass_effect;
 
 /// Check if liquid glass effect is supported on the current platform
 ///
@@ -15,7 +15,7 @@ use crate::macos;
 pub fn is_glass_supported<R: Runtime>(_app: AppHandle<R>) -> bool {
     #[cfg(target_os = "macos")]
     {
-        macos::is_glass_supported()
+        glass_effect::is_glass_supported()
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -38,7 +38,7 @@ pub fn set_liquid_glass_effect<R: Runtime>(
 ) -> Result<()> {
     #[cfg(target_os = "macos")]
     {
-        macos::set_liquid_glass_effect(&app, &window, config)
+        glass_effect::set_liquid_glass_effect(&app, &window, config)
     }
     #[cfg(not(target_os = "macos"))]
     {

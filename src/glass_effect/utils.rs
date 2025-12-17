@@ -1,7 +1,6 @@
 //! Utility functions for macOS native code
 
 use cocoa::base::id;
-use cocoa::foundation::NSOperatingSystemVersion;
 use dispatch::Queue;
 use objc::runtime::{Class, BOOL};
 use objc::{class, msg_send, sel, sel_impl};
@@ -76,15 +75,6 @@ pub fn color_from_hex(hex: &str) -> Option<id> {
             alpha: a
         ];
         Some(color)
-    }
-}
-
-/// Check if the current macOS version supports liquid glass (macOS 26+)
-pub fn is_macos_26_or_later() -> bool {
-    unsafe {
-        let process_info: id = msg_send![class!(NSProcessInfo), processInfo];
-        let version: NSOperatingSystemVersion = msg_send![process_info, operatingSystemVersion];
-        version.majorVersion >= 26
     }
 }
 

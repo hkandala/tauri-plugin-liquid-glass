@@ -28,7 +28,7 @@ mod error;
 mod models;
 
 #[cfg(target_os = "macos")]
-mod macos;
+mod glass_effect;
 
 pub use error::Error;
 pub use models::*;
@@ -52,7 +52,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         .setup(|app, _api| {
             #[cfg(target_os = "macos")]
             {
-                app.manage(macos::GlassViewRegistry::default());
+                app.manage(glass_effect::GlassViewRegistry::default());
             }
             Ok(())
         })

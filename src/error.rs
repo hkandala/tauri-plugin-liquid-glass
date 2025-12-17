@@ -19,6 +19,10 @@ pub enum Error {
     #[error("Failed to create glass effect view")]
     ViewCreationFailed,
 
+    /// Failed to acquire registry lock
+    #[error("Failed to acquire glass view registry lock")]
+    RegistryLockFailed,
+
     /// Invalid color format
     #[error("Invalid color format: {0}")]
     InvalidColorFormat(String),
