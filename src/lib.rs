@@ -47,12 +47,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("liquid-glass")
         .invoke_handler(tauri::generate_handler![
             commands::is_glass_supported,
-            commands::add_glass_effect,
-            commands::configure_glass,
-            commands::set_variant,
-            commands::set_scrim,
-            commands::set_subdued,
-            commands::remove_glass_effect,
+            commands::set_liquid_glass_effect,
         ])
         .setup(|app, _api| {
             #[cfg(target_os = "macos")]

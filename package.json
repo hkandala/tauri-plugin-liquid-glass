@@ -1,7 +1,7 @@
 {
-  "name": "tauri-plugin-liquid-glass-api",
+  "name": "tauri-liquid-glass",
   "version": "0.1.0",
-  "description": "TypeScript API for tauri-plugin-liquid-glass - macOS 26+ Liquid Glass effect support",
+  "description": "macOS 26+ Liquid Glass effect support for Tauri",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -44,6 +44,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hkandala/tauri-plugin-liquid-glass"
+    "url": "https://github.com/hkandala/tauri-liquid-glass"
   }
 }

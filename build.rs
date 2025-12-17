@@ -1,12 +1,4 @@
-const COMMANDS: &[&str] = &[
-    "is_glass_supported",
-    "add_glass_effect",
-    "configure_glass",
-    "set_variant",
-    "set_scrim",
-    "set_subdued",
-    "remove_glass_effect",
-];
+const COMMANDS: &[&str] = &["is_glass_supported", "set_liquid_glass_effect"];
 
 fn main() {
     tauri_plugin::Builder::new(COMMANDS)

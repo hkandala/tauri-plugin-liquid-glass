@@ -1,10 +1,7 @@
 //! Core implementation for NSGlassEffectView and fallback NSVisualEffectView
 
 use std::collections::HashMap;
-use std::sync::{
-    atomic::{AtomicI32, Ordering},
-    Mutex,
-};
+use std::sync::Mutex;
 
 use cocoa::appkit::{
     NSViewHeightSizable, NSViewWidthSizable, NSVisualEffectBlendingMode, NSVisualEffectMaterial,
@@ -12,6 +9,7 @@ use cocoa::appkit::{
 };
 use cocoa::base::{id, nil, NO, YES};
 use cocoa::foundation::NSRect;
+use log::warn;
 use objc::runtime::{Class, Object, Sel, BOOL};
 use objc::{class, msg_send, sel, sel_impl};
 
@@ -19,19 +17,14 @@ use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 
 use super::utils::{color_from_hex, glass_class_available, is_macos_26_or_later, run_on_main_sync};
 use crate::error::{Error, Result};
-use crate::models::{GlassMaterialVariant, GlassOptions};
+use crate::models::LiquidGlassConfig;
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 /// NSWindowOrderingMode
-const NS_WINDOW_ABOVE: i64 = 1;
 const NS_WINDOW_BELOW: i64 = -1;
-
-/// NSBox type constants
-const NS_BOX_CUSTOM: u64 = 4;
-const NS_NO_BORDER: u64 = 0;
 
 /// NSAutoresizingMaskOptions (combined for convenience)
 fn autoresize_mask() -> u64 {
@@ -42,11 +35,12 @@ fn autoresize_mask() -> u64 {
 // Glass View Registry
 // ============================================================================
 
-/// Entry for tracking a glass view and its associated views.
-/// Stores raw pointer addresses (usize) for thread-safe storage.
+/// Entry for tracking a glass view.
+/// Stores raw pointer address (usize) for thread-safe storage.
 struct GlassViewEntry {
     glass_view: usize,
-    background_view: Option<usize>,
+    /// Tint overlay view for NSVisualEffectView fallback (NSGlassEffectView has native tint support)
+    tint_overlay: Option<usize>,
 }
 
 // SAFETY: GlassViewEntry stores usize values (raw pointer addresses).
@@ -54,17 +48,15 @@ struct GlassViewEntry {
 unsafe impl Send for GlassViewEntry {}
 unsafe impl Sync for GlassViewEntry {}
 
-/// Registry for tracking created glass views by ID
+/// Registry for tracking created glass views by window label
 pub struct GlassViewRegistry {
-    views: Mutex<HashMap<i32, GlassViewEntry>>,
-    next_id: AtomicI32,
+    views: Mutex<HashMap<String, GlassViewEntry>>,
 }
 
 impl Default for GlassViewRegistry {
     fn default() -> Self {
         Self {
             views: Mutex::new(HashMap::new()),
-            next_id: AtomicI32::new(0),
         }
     }
 }
@@ -78,100 +70,128 @@ pub fn is_glass_supported() -> bool {
     run_on_main_sync(|| is_macos_26_or_later() && glass_class_available())
 }
 
-/// Add a glass effect to a window
-pub fn add_glass_effect<R: Runtime>(
+/// Set liquid glass effect on a window
+///
+/// - If `config.enabled` is true: creates or updates the glass effect
+/// - If `config.enabled` is false: removes the glass effect if present
+pub fn set_liquid_glass_effect<R: Runtime>(
     app: &AppHandle<R>,
     window: &WebviewWindow<R>,
-    options: GlassOptions,
-) -> Result<i32> {
+    config: LiquidGlassConfig,
+) -> Result<()> {
     let registry = app.state::<GlassViewRegistry>();
-    let view_id = registry.next_id.fetch_add(1, Ordering::SeqCst);
+    let window_label = window.label().to_string();
+
+    if config.enabled {
+        // Check if window already has a glass effect
+        let existing = registry.views.lock().unwrap().contains_key(&window_label);
+
+        if existing {
+            // Update existing glass effect
+            update_glass_effect(app, window, &config)
+        } else {
+            // Create new glass effect
+            create_glass_effect(app, window, &config)
+        }
+    } else {
+        // Remove glass effect if present
+        remove_glass_effect_internal(app, &window_label)
+    }
+}
+
+// ============================================================================
+// Internal - Create Glass Effect
+// ============================================================================
+
+fn create_glass_effect<R: Runtime>(
+    app: &AppHandle<R>,
+    window: &WebviewWindow<R>,
+    config: &LiquidGlassConfig,
+) -> Result<()> {
+    let registry = app.state::<GlassViewRegistry>();
+    let window_label = window.label().to_string();
 
     let ns_window = window
         .ns_window()
-        .map_err(|_| Error::WindowNotFound(window.label().to_string()))?;
+        .map_err(|_| Error::WindowNotFound(window_label.clone()))?;
 
     let ns_window_addr = ns_window as usize;
+    let config = config.clone();
 
-    let result = run_on_main_sync(move || unsafe {
-        create_and_attach_glass_view(ns_window_addr, &options)
-    })?;
+    let (glass_view_addr, tint_overlay) =
+        run_on_main_sync(move || unsafe { create_and_attach_glass_view(ns_window_addr, &config) })?;
 
     registry.views.lock().unwrap().insert(
-        view_id,
+        window_label,
         GlassViewEntry {
-            glass_view: result.0,
-            background_view: result.1,
+            glass_view: glass_view_addr,
+            tint_overlay,
         },
     );
-
-    Ok(view_id)
-}
-
-/// Configure an existing glass view
-pub fn configure_glass<R: Runtime>(
-    app: &AppHandle<R>,
-    view_id: i32,
-    corner_radius: Option<f64>,
-    tint_color: Option<String>,
-) -> Result<()> {
-    let registry = app.state::<GlassViewRegistry>();
-
-    let views = registry.views.lock().unwrap();
-    let entry = views.get(&view_id).ok_or(Error::ViewNotFound(view_id))?;
-    let glass_addr = entry.glass_view;
-    let bg_addr = entry.background_view;
-    drop(views);
-
-    run_on_main_sync(move || unsafe {
-        update_glass_config(glass_addr, bg_addr, corner_radius, tint_color);
-    });
 
     Ok(())
 }
 
-/// Set glass material variant (experimental)
-pub fn set_variant<R: Runtime>(
+// ============================================================================
+// Internal - Update Glass Effect
+// ============================================================================
+
+fn update_glass_effect<R: Runtime>(
     app: &AppHandle<R>,
-    view_id: i32,
-    variant: GlassMaterialVariant,
+    window: &WebviewWindow<R>,
+    config: &LiquidGlassConfig,
 ) -> Result<()> {
-    set_glass_property(app, view_id, "variant", variant as i64)
+    let registry = app.state::<GlassViewRegistry>();
+    let window_label = window.label().to_string();
+
+    let (glass_addr, existing_tint) = {
+        let views = registry.views.lock().unwrap();
+        let entry = views
+            .get(&window_label)
+            .ok_or_else(|| Error::WindowNotFound(window_label.clone()))?;
+        (entry.glass_view, entry.tint_overlay)
+    };
+
+    let config = config.clone();
+
+    let new_tint =
+        run_on_main_sync(move || unsafe { apply_glass_config(glass_addr, &config, existing_tint) });
+
+    // Update tint overlay in registry
+    if let Ok(mut views) = registry.views.lock() {
+        if let Some(entry) = views.get_mut(&window_label) {
+            entry.tint_overlay = new_tint;
+        }
+    }
+
+    Ok(())
 }
 
-/// Set scrim state (experimental)
-pub fn set_scrim<R: Runtime>(app: &AppHandle<R>, view_id: i32, enabled: bool) -> Result<()> {
-    set_glass_property(app, view_id, "scrim", i64::from(enabled))
-}
+// ============================================================================
+// Internal - Remove Glass Effect
+// ============================================================================
 
-/// Set subdued state (experimental)
-pub fn set_subdued<R: Runtime>(app: &AppHandle<R>, view_id: i32, enabled: bool) -> Result<()> {
-    set_glass_property(app, view_id, "subdued", i64::from(enabled))
-}
-
-/// Remove a glass effect from a window
-pub fn remove_glass_effect<R: Runtime>(app: &AppHandle<R>, view_id: i32) -> Result<()> {
+fn remove_glass_effect_internal<R: Runtime>(app: &AppHandle<R>, window_label: &str) -> Result<()> {
     let registry = app.state::<GlassViewRegistry>();
 
-    let entry = registry
-        .views
-        .lock()
-        .unwrap()
-        .remove(&view_id)
-        .ok_or(Error::ViewNotFound(view_id))?;
+    let entry = registry.views.lock().unwrap().remove(window_label);
 
-    let glass_addr = entry.glass_view;
-    let bg_addr = entry.background_view;
+    // If no entry exists, that's fine - effect was already disabled
+    if let Some(entry) = entry {
+        let glass_addr = entry.glass_view;
+        let tint_addr = entry.tint_overlay;
 
-    run_on_main_sync(move || unsafe {
-        let glass: id = glass_addr as id;
-        let _: () = msg_send![glass, removeFromSuperview];
-
-        if let Some(addr) = bg_addr {
-            let bg: id = addr as id;
-            let _: () = msg_send![bg, removeFromSuperview];
-        }
-    });
+        run_on_main_sync(move || unsafe {
+            // Remove tint overlay first (if exists)
+            if let Some(addr) = tint_addr {
+                let tint: id = addr as id;
+                let _: () = msg_send![tint, removeFromSuperview];
+            }
+            // Remove glass view
+            let glass: id = glass_addr as id;
+            let _: () = msg_send![glass, removeFromSuperview];
+        });
+    }
 
     Ok(())
 }
@@ -181,9 +201,10 @@ pub fn remove_glass_effect<R: Runtime>(app: &AppHandle<R>, view_id: i32) -> Resu
 // ============================================================================
 
 /// Creates and attaches glass view to window. Must be called on main thread.
+/// Returns (glass_view_addr, tint_overlay_addr)
 unsafe fn create_and_attach_glass_view(
     ns_window_addr: usize,
-    options: &GlassOptions,
+    config: &LiquidGlassConfig,
 ) -> Result<(usize, Option<usize>)> {
     let ns_window: id = ns_window_addr as id;
     let content_view: id = msg_send![ns_window, contentView];
@@ -192,60 +213,69 @@ unsafe fn create_and_attach_glass_view(
         return Err(Error::ViewCreationFailed);
     }
 
-    // Configure window for transparency
-    configure_window_transparency(ns_window);
-
-    // Make webview transparent so glass shows through
-    make_webview_transparent(content_view);
+    // Check and warn about transparency settings
+    check_window_transparency(ns_window);
+    check_webview_transparency(content_view);
 
     let bounds: NSRect = msg_send![content_view, bounds];
 
     // Create glass view based on OS version
-    let (glass_view, background_view) = if glass_class_available() {
-        create_glass_effect_view(bounds, options)?
+    let glass_view = if glass_class_available() {
+        create_glass_effect_view(bounds)?
     } else {
         create_visual_effect_view(bounds)
     };
 
-    // Configure appearance
-    configure_view_appearance(glass_view, background_view, options);
+    // Configure appearance and experimental properties
+    let tint_overlay = apply_glass_config(glass_view as usize, config, None);
 
     // Insert into view hierarchy
-    insert_glass_into_hierarchy(content_view, glass_view, background_view);
+    let _: () =
+        msg_send![content_view, addSubview: glass_view positioned: NS_WINDOW_BELOW relativeTo: nil];
 
-    Ok((glass_view as usize, background_view.map(|v| v as usize)))
+    Ok((glass_view as usize, tint_overlay))
 }
 
-/// Configure NSWindow for full transparency
-unsafe fn configure_window_transparency(ns_window: id) {
-    let _: () = msg_send![ns_window, setOpaque: NO];
+/// Check if window has transparency configured and warn if not
+unsafe fn check_window_transparency(ns_window: id) {
+    let is_opaque: BOOL = msg_send![ns_window, isOpaque];
+    if is_opaque != NO {
+        warn!(
+            "Window is opaque. For liquid glass effect to show through, \
+             set window transparency in tauri.conf.json or via window builder."
+        );
+    }
+}
 
-    let clear_color: id = msg_send![class!(NSColor), clearColor];
-    let _: () = msg_send![ns_window, setBackgroundColor: clear_color];
-    let _: () = msg_send![ns_window, setHasShadow: YES];
-
-    let content_view: id = msg_send![ns_window, contentView];
-    if content_view != nil {
-        let _: () = msg_send![content_view, setWantsLayer: YES];
-        let layer: id = msg_send![content_view, layer];
-        if layer != nil {
-            let cg_color: id = msg_send![clear_color, CGColor];
-            let _: () = msg_send![layer, setBackgroundColor: cg_color];
+/// Check if webview has transparency and warn if not
+unsafe fn check_webview_transparency(content_view: id) {
+    if let Some(webview) = find_webview(content_view) {
+        // Check if webview draws background
+        let key: id =
+            msg_send![class!(NSString), stringWithUTF8String: c"drawsBackground".as_ptr()];
+        let draws_bg: id = msg_send![webview, valueForKey: key];
+        if draws_bg != nil {
+            let draws: BOOL = msg_send![draws_bg, boolValue];
+            if draws != NO {
+                warn!(
+                    "WebView has background drawing enabled. For liquid glass effect to show through, \
+                     set transparent background in your HTML/CSS (e.g., background: transparent)."
+                );
+            }
         }
     }
 }
 
-/// Recursively find and make WKWebView transparent
-unsafe fn make_webview_transparent(view: id) {
+/// Find WKWebView in view hierarchy
+unsafe fn find_webview(view: id) -> Option<id> {
     if view == nil {
-        return;
+        return None;
     }
 
     if let Some(webview_class) = Class::get("WKWebView") {
         let is_webview: BOOL = msg_send![view, isKindOfClass: webview_class];
         if is_webview != NO {
-            set_webview_transparent(view);
-            return;
+            return Some(view);
         }
     }
 
@@ -253,32 +283,12 @@ unsafe fn make_webview_transparent(view: id) {
     let count: usize = msg_send![subviews, count];
     for i in 0..count {
         let subview: id = msg_send![subviews, objectAtIndex: i];
-        make_webview_transparent(subview);
-    }
-}
-
-/// Set WKWebView to transparent background
-unsafe fn set_webview_transparent(webview: id) {
-    // Try private API (most reliable)
-    let sel_draws_bg = Sel::register("_setDrawsBackground:");
-    let responds: BOOL = msg_send![webview, respondsToSelector: sel_draws_bg];
-    if responds != NO {
-        let _: () = msg_send![webview, _setDrawsBackground: NO];
+        if let Some(webview) = find_webview(subview) {
+            return Some(webview);
+        }
     }
 
-    // Try setValue:forKey: as backup
-    let key: id = msg_send![class!(NSString), stringWithUTF8String: c"drawsBackground".as_ptr()];
-    let no_val: id = msg_send![class!(NSNumber), numberWithBool: NO];
-    let _: () = msg_send![webview, setValue: no_val forKey: key];
-
-    // Set layer background to clear
-    let _: () = msg_send![webview, setWantsLayer: YES];
-    let layer: id = msg_send![webview, layer];
-    if layer != nil {
-        let clear: id = msg_send![class!(NSColor), clearColor];
-        let cg_color: id = msg_send![clear, CGColor];
-        let _: () = msg_send![layer, setBackgroundColor: cg_color];
-    }
+    None
 }
 
 // ============================================================================
@@ -286,27 +296,18 @@ unsafe fn set_webview_transparent(webview: id) {
 // ============================================================================
 
 /// Create NSGlassEffectView (macOS 26+ private API)
-unsafe fn create_glass_effect_view(
-    bounds: NSRect,
-    options: &GlassOptions,
-) -> Result<(id, Option<id>)> {
+unsafe fn create_glass_effect_view(bounds: NSRect) -> Result<id> {
     let glass_class = Class::get("NSGlassEffectView").ok_or(Error::ViewCreationFailed)?;
 
     let glass: id = msg_send![glass_class, alloc];
     let glass: id = msg_send![glass, initWithFrame: bounds];
     let _: () = msg_send![glass, setAutoresizingMask: autoresize_mask()];
 
-    let background = if options.opaque {
-        Some(create_background_box(bounds))
-    } else {
-        None
-    };
-
-    Ok((glass, background))
+    Ok(glass)
 }
 
 /// Create NSVisualEffectView (fallback for older macOS)
-unsafe fn create_visual_effect_view(bounds: NSRect) -> (id, Option<id>) {
+unsafe fn create_visual_effect_view(bounds: NSRect) -> id {
     let visual: id = msg_send![class!(NSVisualEffectView), alloc];
     let visual: id = msg_send![visual, initWithFrame: bounds];
 
@@ -315,139 +316,119 @@ unsafe fn create_visual_effect_view(bounds: NSRect) -> (id, Option<id>) {
     let _: () = msg_send![visual, setMaterial: NSVisualEffectMaterial::UnderWindowBackground];
     let _: () = msg_send![visual, setState: NSVisualEffectState::Active];
 
-    (visual, None)
-}
-
-/// Create NSBox for opaque background mode
-unsafe fn create_background_box(bounds: NSRect) -> id {
-    let bg: id = msg_send![class!(NSBox), alloc];
-    let bg: id = msg_send![bg, initWithFrame: bounds];
-
-    let _: () = msg_send![bg, setAutoresizingMask: autoresize_mask()];
-    let _: () = msg_send![bg, setBoxType: NS_BOX_CUSTOM];
-    let _: () = msg_send![bg, setBorderType: NS_NO_BORDER];
-
-    let color: id = msg_send![class!(NSColor), windowBackgroundColor];
-    let _: () = msg_send![bg, setFillColor: color];
-    let _: () = msg_send![bg, setWantsLayer: YES];
-
-    bg
+    visual
 }
 
 // ============================================================================
 // View Configuration
 // ============================================================================
 
-/// Configure view appearance (corner radius, tint color)
-unsafe fn configure_view_appearance(glass: id, background: Option<id>, options: &GlassOptions) {
+/// Apply all configuration to glass view
+/// Returns the tint overlay address if one was created (for NSVisualEffectView fallback)
+unsafe fn apply_glass_config(
+    glass_addr: usize,
+    config: &LiquidGlassConfig,
+    existing_tint_overlay: Option<usize>,
+) -> Option<usize> {
+    let glass: id = glass_addr as id;
     let _: () = msg_send![glass, setWantsLayer: YES];
     let layer: id = msg_send![glass, layer];
 
+    // Apply corner radius
     if layer != nil {
-        let _: () = msg_send![layer, setCornerRadius: options.corner_radius];
+        let _: () = msg_send![layer, setCornerRadius: config.corner_radius];
         let _: () = msg_send![layer, setMasksToBounds: YES];
     }
 
-    if let Some(bg) = background {
-        let _: () = msg_send![bg, setWantsLayer: YES];
-        let bg_layer: id = msg_send![bg, layer];
-        if bg_layer != nil {
-            let _: () = msg_send![bg_layer, setCornerRadius: options.corner_radius];
-            let _: () = msg_send![bg_layer, setMasksToBounds: YES];
+    // Apply or clear tint color
+    let tint_overlay = if let Some(ref hex) = config.tint_color {
+        if let Some(color) = color_from_hex(hex) {
+            apply_tint_color(glass, layer, color, existing_tint_overlay)
+        } else {
+            clear_tint_color(glass, layer, existing_tint_overlay);
+            None
         }
+    } else {
+        // Clear tint color when None
+        clear_tint_color(glass, layer, existing_tint_overlay);
+        None
+    };
+
+    // Apply variant (only for NSGlassEffectView)
+    if glass_class_available() {
+        set_view_property(glass_addr, "variant", config.variant as i64);
     }
 
-    if let Some(ref hex) = options.tint_color {
-        if let Some(color) = color_from_hex(hex) {
-            apply_tint_color(glass, layer, color);
-        }
-    }
+    tint_overlay
 }
 
 /// Apply tint color to glass view
-unsafe fn apply_tint_color(glass: id, layer: id, color: id) {
+/// For NSGlassEffectView: uses native setTintColor:
+/// For NSVisualEffectView: creates/updates a colored overlay subview
+/// Returns the tint overlay address if one was created/updated
+unsafe fn apply_tint_color(
+    glass: id,
+    layer: id,
+    color: id,
+    existing_overlay: Option<usize>,
+) -> Option<usize> {
     let sel = sel!(setTintColor:);
     let responds: BOOL = msg_send![glass, respondsToSelector: sel];
     if responds != NO {
+        // NSGlassEffectView - use native tint
         let _: () = msg_send![glass, setTintColor: color];
-    } else if layer != nil {
-        let cg_color: id = msg_send![color, CGColor];
-        let _: () = msg_send![layer, setBackgroundColor: cg_color];
-    }
-}
-
-/// Insert glass view into view hierarchy
-unsafe fn insert_glass_into_hierarchy(
-    content_view: id,
-    glass_view: id,
-    background_view: Option<id>,
-) {
-    if let Some(bg) = background_view {
-        let _: () =
-            msg_send![content_view, addSubview: bg positioned: NS_WINDOW_BELOW relativeTo: nil];
-        let _: () = msg_send![content_view, addSubview: glass_view positioned: NS_WINDOW_ABOVE relativeTo: bg];
+        None
     } else {
-        let _: () = msg_send![content_view, addSubview: glass_view positioned: NS_WINDOW_BELOW relativeTo: nil];
-    }
-}
+        // NSVisualEffectView fallback - use overlay subview
+        let overlay: id = if let Some(addr) = existing_overlay {
+            // Reuse existing overlay
+            addr as id
+        } else {
+            // Create new overlay view
+            let bounds: NSRect = msg_send![glass, bounds];
+            let overlay: id = msg_send![class!(NSView), alloc];
+            let overlay: id = msg_send![overlay, initWithFrame: bounds];
+            let _: () = msg_send![overlay, setAutoresizingMask: autoresize_mask()];
+            let _: () = msg_send![overlay, setWantsLayer: YES];
+            let _: () = msg_send![glass, addSubview: overlay];
+            overlay
+        };
 
-/// Update glass configuration
-unsafe fn update_glass_config(
-    glass_addr: usize,
-    bg_addr: Option<usize>,
-    corner_radius: Option<f64>,
-    tint_color: Option<String>,
-) {
-    let glass: id = glass_addr as id;
-    let layer: id = msg_send![glass, layer];
+        // Apply color to overlay layer (CGColor preserves alpha for transparency)
+        let overlay_layer: id = msg_send![overlay, layer];
+        if overlay_layer != nil {
+            let cg_color: id = msg_send![color, CGColor];
+            let _: () = msg_send![overlay_layer, setBackgroundColor: cg_color];
 
-    if let Some(radius) = corner_radius {
-        if layer != nil {
-            let _: () = msg_send![layer, setCornerRadius: radius];
-        }
-
-        if let Some(addr) = bg_addr {
-            let bg: id = addr as id;
-            let bg_layer: id = msg_send![bg, layer];
-            if bg_layer != nil {
-                let _: () = msg_send![bg_layer, setCornerRadius: radius];
+            // Apply same corner radius as parent
+            if layer != nil {
+                let radius: f64 = msg_send![layer, cornerRadius];
+                let _: () = msg_send![overlay_layer, setCornerRadius: radius];
+                let _: () = msg_send![overlay_layer, setMasksToBounds: YES];
             }
         }
-    }
 
-    if let Some(ref hex) = tint_color {
-        if let Some(color) = color_from_hex(hex) {
-            apply_tint_color(glass, layer, color);
-        }
+        Some(overlay as usize)
+    }
+}
+
+/// Clear tint color from glass view
+unsafe fn clear_tint_color(glass: id, _layer: id, existing_overlay: Option<usize>) {
+    let sel = sel!(setTintColor:);
+    let responds: BOOL = msg_send![glass, respondsToSelector: sel];
+    if responds != NO {
+        // NSGlassEffectView - clear native tint
+        let _: () = msg_send![glass, setTintColor: nil];
+    } else if let Some(addr) = existing_overlay {
+        // NSVisualEffectView fallback - remove overlay subview
+        let overlay: id = addr as id;
+        let _: () = msg_send![overlay, removeFromSuperview];
     }
 }
 
 // ============================================================================
 // Dynamic Property Setting (Experimental APIs)
 // ============================================================================
-
-/// Set an integer property on a glass view
-fn set_glass_property<R: Runtime>(
-    app: &AppHandle<R>,
-    view_id: i32,
-    key: &str,
-    value: i64,
-) -> Result<()> {
-    let registry = app.state::<GlassViewRegistry>();
-
-    let views = registry.views.lock().unwrap();
-    let entry = views.get(&view_id).ok_or(Error::ViewNotFound(view_id))?;
-    let glass_addr = entry.glass_view;
-    drop(views);
-
-    let key = key.to_string();
-
-    run_on_main_sync(move || unsafe {
-        set_view_property(glass_addr, &key, value);
-    });
-
-    Ok(())
-}
 
 /// Set property on view using selector lookup
 unsafe fn set_view_property(view_addr: usize, key: &str, value: i64) {

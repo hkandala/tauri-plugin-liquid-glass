@@ -1,13 +1,18 @@
 /**
- * Options for configuring the glass effect
+ * Configuration for the liquid glass effect
+ *
+ * All fields are optional and have sensible defaults.
+ * Pass an empty object `{}` to enable the effect with default settings.
  */
-export interface GlassOptions {
-  /** Corner radius for the glass view in pixels */
+export interface LiquidGlassConfig {
+  /** Whether the glass effect is enabled (default: true) */
+  enabled?: boolean;
+  /** Corner radius for the glass view in pixels (default: 0) */
   cornerRadius?: number;
   /** Tint color in hex format (#RRGGBB or #RRGGBBAA) */
   tintColor?: string;
-  /** Whether to add an opaque background behind the glass */
-  opaque?: boolean;
+  /** Glass material variant - experimental (default: Regular) */
+  variant?: GlassMaterialVariant;
 }
 
 /**

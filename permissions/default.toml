@@ -2,10 +2,5 @@
 description = "Default permissions for the liquid-glass plugin"
 permissions = [
     "allow-is-glass-supported",
-    "allow-add-glass-effect",
-    "allow-configure-glass",
-    "allow-set-variant",
-    "allow-set-scrim",
-    "allow-set-subdued",
-    "allow-remove-glass-effect",
+    "allow-set-liquid-glass-effect",
 ]

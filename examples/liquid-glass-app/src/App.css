@@ -57,8 +57,8 @@
 
 .panel {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 24px;
+  right: 24px;
   width: 180px;
   border-radius: 10px;
   overflow: hidden;
@@ -68,6 +68,11 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
   color: white;
   font-size: 12px;
+  transition: width 0.2s ease;
+}
+
+.panel.collapsed {
+  width: auto;
 }
 
 .panel-header {
@@ -78,6 +83,11 @@
   cursor: pointer;
   user-select: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel.collapsed .panel-header {
+  border-bottom: none;
+  justify-content: center;
 }
 
 .panel-title {
@@ -164,3 +174,34 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button:disabled:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.fallback-notice {
+  padding: 8px 10px;
+  background-color: rgba(255, 180, 0, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 180, 0, 0.3);
+}
+
+.label.disabled,
+.checkbox.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.slider:disabled,
+.select:disabled,
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

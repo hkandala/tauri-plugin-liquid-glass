@@ -1,14 +1,14 @@
 [package]
-name = "tauri-plugin-liquid-glass"
+name = "tauri-liquid-glass"
 version = "0.1.0"
 edition = "2021"
 description = "macOS 26+ Liquid Glass effect support for Tauri"
 license = "MIT"
-repository = "https://github.com/hkandala/tauri-plugin-liquid-glass"
+repository = "https://github.com/hkandala/tauri-liquid-glass"
 keywords = ["tauri", "macos", "glass", "vibrancy", "liquid-glass"]
 categories = ["gui", "os::macos-apis"]
 rust-version = "1.77"
-links = "tauri-plugin-liquid-glass"
+links = "liquid-glass"
 exclude = ["/examples", "/dist", "/guest-js", "/node_modules"]
 
 [lib]
@@ -24,6 +24,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
 thiserror = "2.0"
+log = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # Note: cocoa/objc are deprecated in favor of objc2 ecosystem, but objc2 requires

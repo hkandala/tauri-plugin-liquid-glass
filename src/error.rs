@@ -15,10 +15,6 @@ pub enum Error {
     #[error("Window not found: {0}")]
     WindowNotFound(String),
 
-    /// The specified glass view was not found
-    #[error("Glass view not found: {0}")]
-    ViewNotFound(i32),
-
     /// Failed to create glass effect view
     #[error("Failed to create glass effect view")]
     ViewCreationFailed,

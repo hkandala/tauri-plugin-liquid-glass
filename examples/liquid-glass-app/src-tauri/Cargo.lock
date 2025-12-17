@@ -1895,6 +1895,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df1d3c3b53da64cf5760482273a98e575c651a67eec7f77df96b5b642de8f039"
 
 [[package]]
+name = "liquid-glass-app"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-liquid-glass",
+ "tauri-plugin-opener",
+]
+
+[[package]]
 name = "litemap"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3583,18 +3595,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-app-boilerplate"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-liquid-glass",
- "tauri-plugin-opener",
-]
-
-[[package]]
 name = "tauri-build"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3644,6 +3644,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tauri-liquid-glass"
+version = "0.1.0"
+dependencies = [
+ "cocoa",
+ "dispatch",
+ "log",
+ "objc",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "tauri-macros"
 version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3672,21 +3688,6 @@ dependencies = [
  "tauri-utils",
  "toml 0.9.8",
  "walkdir",
-]
-
-[[package]]
-name = "tauri-plugin-liquid-glass"
-version = "0.1.0"
-dependencies = [
- "cocoa",
- "dispatch",
- "objc",
- "serde",
- "serde_json",
- "serde_repr",
- "tauri",
- "tauri-plugin",
- "thiserror 2.0.17",
 ]
 
 [[package]]

@@ -1,21 +1,32 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-/// Options for configuring the glass effect
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GlassOptions {
+/// Configuration for the liquid glass effect
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LiquidGlassConfig {
+    /// Whether the glass effect is enabled
+    pub enabled: bool,
+
     /// Corner radius for the glass view in pixels
-    #[serde(default)]
     pub corner_radius: f64,
 
     /// Tint color in hex format (#RRGGBB or #RRGGBBAA)
-    #[serde(default)]
     pub tint_color: Option<String>,
 
-    /// Whether to add an opaque background behind the glass
-    #[serde(default)]
-    pub opaque: bool,
+    /// Glass material variant (experimental)
+    pub variant: GlassMaterialVariant,
+}
+
+impl Default for LiquidGlassConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            corner_radius: 0.0,
+            tint_color: None,
+            variant: GlassMaterialVariant::default(),
+        }
+    }
 }
 
 /// Glass material variants for NSGlassEffectView
