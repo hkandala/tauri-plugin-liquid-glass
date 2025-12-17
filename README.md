@@ -257,7 +257,7 @@ pnpm tauri dev
 
 ## Credits
 
-Inspired by [electron-liquid-glass](https://github.com/meridiuslabs/electron-liquid-glass) by Meridius Labs.
+Inspired by [electron-liquid-glass](https://github.com/Meridius-Labs/electron-liquid-glass/) by Meridius Labs.
 
 ## License
 
