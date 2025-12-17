@@ -4,23 +4,14 @@ use tauri::{command, AppHandle, Runtime, WebviewWindow};
 
 use crate::error::Result;
 use crate::models::LiquidGlassConfig;
-
-#[cfg(target_os = "macos")]
-use crate::glass_effect;
+use crate::LiquidGlassExt;
 
 /// Check if liquid glass effect is supported on the current platform
 ///
 /// Returns true if running on macOS 26+ with NSGlassEffectView available.
 #[command]
-pub fn is_glass_supported<R: Runtime>(_app: AppHandle<R>) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        glass_effect::is_glass_supported()
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        false
-    }
+pub fn is_glass_supported<R: Runtime>(app: AppHandle<R>) -> bool {
+    app.liquid_glass().is_supported()
 }
 
 /// Set liquid glass effect on a window
@@ -36,13 +27,5 @@ pub fn set_liquid_glass_effect<R: Runtime>(
     window: WebviewWindow<R>,
     config: LiquidGlassConfig,
 ) -> Result<()> {
-    #[cfg(target_os = "macos")]
-    {
-        glass_effect::set_liquid_glass_effect(&app, &window, config)
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = (app, window, config);
-        Ok(()) // No-op on non-macOS
-    }
+    app.liquid_glass().set_effect(&window, config)
 }

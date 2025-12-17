@@ -2,7 +2,7 @@
 
 This example demonstrates how to add the **Liquid Glass** effect to a Tauri application, starting from the standard `create-tauri-app` boilerplate.
 
-> **Note:** The Liquid Glass effect requires **macOS 26+ (Tahoe)** and uses private Apple APIs.
+> **Note:** The Liquid Glass effect requires **macOS 26+ (Tahoe)** and uses private Apple APIs. On older macOS versions, the plugin falls back to `NSVisualEffectView`.
 
 ## Quick Start
 
@@ -28,7 +28,7 @@ Add the liquid glass plugin and enable the `macos-private-api` feature for Tauri
 tauri = { version = "2", features = ["macos-private-api"] }
 
 # Add the liquid glass plugin
-tauri-plugin-liquid-glass = "0.1"  # or use path for local development
+tauri-liquid-glass = "0.1"
 ```
 
 ---
@@ -42,7 +42,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         // Add this line to register the liquid glass plugin
-        .plugin(tauri_plugin_liquid_glass::init())
+        .plugin(tauri_liquid_glass::init())
         .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -65,7 +65,8 @@ Enable macOS private API and set the window to be transparent:
         "width": 800,
         "height": 600,
         "transparent": true,
-        "decorations": true
+        "decorations": true,
+        "titleBarStyle": "Transparent"
       }
     ]
   }
@@ -158,39 +159,29 @@ input, button {
 Call the plugin to apply the liquid glass effect:
 
 ```tsx
-import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect } from "react";
+import {
+  setLiquidGlassEffect,
+  isGlassSupported,
+  GlassMaterialVariant,
+} from "tauri-liquid-glass";
 
 function App() {
-  const [glassViewId, setGlassViewId] = useState<number>(-1);
-
-  // Apply glass effect on mount
   useEffect(() => {
-    applyGlassEffect();
-  }, []);
+    const init = async () => {
+      // Check if liquid glass is supported (macOS 26+)
+      const supported = await isGlassSupported();
+      console.log("Liquid Glass supported:", supported);
 
-  const applyGlassEffect = async () => {
-    try {
-      // Remove existing effect if re-applying
-      if (glassViewId >= 0) {
-        await invoke("plugin:liquid-glass|remove_glass_effect", { 
-          viewId: glassViewId 
-        });
-      }
-
-      // Apply the liquid glass effect
-      const id = await invoke<number>("plugin:liquid-glass|add_glass_effect", {
-        options: {
-          cornerRadius: 24,           // Match your window's corner radius
-          // tintColor: "#ffffff30",  // Optional: add a color tint overlay
-        },
+      // Apply the glass effect
+      await setLiquidGlassEffect({
+        cornerRadius: 24,  // Match your window's corner radius
+        // tintColor: "#ffffff30",  // Optional: add a color tint overlay
+        // variant: GlassMaterialVariant.Sidebar,  // Optional: material variant (macOS 26+ only)
       });
-
-      setGlassViewId(id);
-    } catch (error) {
-      console.error("Failed to apply glass effect:", error);
-    }
-  };
+    };
+    init();
+  }, []);
 
   return (
     // Your app content...
@@ -198,15 +189,27 @@ function App() {
 }
 ```
 
-**Available Options:**
-- `cornerRadius` - The corner radius of the glass effect (default: 0)
-- `tintColor` - Optional hex color with alpha for a tint overlay (format: `#RRGGBBAA`)
+**LiquidGlassConfig Options:**
 
-**Available Commands:**
-- `plugin:liquid-glass|add_glass_effect` - Apply the glass effect, returns a view ID
-- `plugin:liquid-glass|remove_glass_effect` - Remove the effect using the view ID
-- `plugin:liquid-glass|configure_glass` - Update options (cornerRadius, tintColor)
-- `plugin:liquid-glass|set_variant` - Change the glass variant style
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | `boolean` | `true` | Whether the glass effect is enabled |
+| `cornerRadius` | `number` | `0` | Corner radius of the glass effect in pixels |
+| `tintColor` | `string` | - | Hex color with alpha (#RRGGBB or #RRGGBBAA) |
+| `variant` | `GlassMaterialVariant` | `Regular` | Material variant (macOS 26+ only) |
+
+**Available Functions:**
+
+| Function | Description |
+|----------|-------------|
+| `isGlassSupported()` | Returns `true` if running on macOS 26+ |
+| `setLiquidGlassEffect(config)` | Apply, update, or remove the glass effect |
+
+To disable the effect:
+
+```tsx
+await setLiquidGlassEffect({ enabled: false });
+```
 
 ---
 
@@ -215,28 +218,38 @@ function App() {
 | File | Change |
 |------|--------|
 | `src-tauri/Cargo.toml` | Add `macos-private-api` feature and liquid-glass plugin |
-| `src-tauri/src/lib.rs` | Register `.plugin(tauri_plugin_liquid_glass::init())` |
+| `src-tauri/src/lib.rs` | Register `.plugin(tauri_liquid_glass::init())` |
 | `src-tauri/tauri.conf.json` | Add `macOSPrivateApi: true` and `transparent: true` |
 | `src-tauri/capabilities/default.json` | Add `liquid-glass:default` permission |
 | `index.html` | Make html/body/root backgrounds transparent |
 | `src/App.css` | Use transparent backgrounds and light colors |
-| `src/App.tsx` | Call `add_glass_effect` on mount |
+| `src/App.tsx` | Call `setLiquidGlassEffect()` on mount |
 
 ---
 
 ## Troubleshooting
 
 ### Glass effect not visible?
-1. Ensure you're running macOS 26+ (Tahoe)
+
+1. Ensure you're running macOS 26+ (Tahoe) for the full effect, or macOS 10.10+ for the fallback
 2. Check that all backgrounds are transparent (html, body, #root, containers)
 3. Verify `macOSPrivateApi: true` in `tauri.conf.json`
 4. Verify `transparent: true` in window config
 
 ### Build errors?
+
 1. Make sure `macos-private-api` feature is enabled in Cargo.toml for tauri
 2. Ensure the plugin is registered in lib.rs
 3. Check that `liquid-glass:default` permission is added to capabilities
 
 ### Effect looks wrong?
+
 - Try adjusting the `cornerRadius` to match your window
 - The effect is best seen when dragging the window over varying backgrounds
+- Try different `variant` values to see which works best for your app (macOS 26+ only)
+
+### Variant selection disabled in example app?
+
+- This means `isGlassSupported()` returned `false`
+- You're likely running on macOS < 26, so the fallback `NSVisualEffectView` is being used
+- Variants are only supported on macOS 26+ with `NSGlassEffectView`
