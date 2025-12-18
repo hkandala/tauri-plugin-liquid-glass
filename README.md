@@ -1,4 +1,4 @@
-# tauri-liquid-glass
+# tauri-plugin-liquid-glass
 
 macOS 26+ Liquid Glass effect support for Tauri v2 applications.
 
@@ -26,17 +26,17 @@ Add the plugin to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tauri-liquid-glass = { git = "https://github.com/hkandala/tauri-liquid-glass" }
+tauri-plugin-liquid-glass = { git = "https://github.com/hkandala/tauri-liquid-glass" }
 ```
 
 ### JavaScript/TypeScript
 
 ```bash
-npm install tauri-liquid-glass
+npm install tauri-plugin-liquid-glass-api
 # or
-yarn add tauri-liquid-glass
+yarn add tauri-plugin-liquid-glass-api
 # or
-pnpm add tauri-liquid-glass
+pnpm add tauri-plugin-liquid-glass-api
 ```
 
 ## Setup
@@ -47,7 +47,7 @@ pnpm add tauri-liquid-glass
 // src-tauri/src/lib.rs
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_liquid_glass::init())
+        .plugin(tauri_plugin_liquid_glass::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -105,7 +105,7 @@ import {
   isGlassSupported,
   setLiquidGlassEffect,
   GlassMaterialVariant,
-} from "tauri-liquid-glass";
+} from "tauri-plugin-liquid-glass-api";
 
 // Check if liquid glass (NSGlassEffectView) is supported
 const supported = await isGlassSupported();
@@ -129,7 +129,7 @@ await setLiquidGlassEffect({ enabled: false });
 The plugin exposes a Rust API via the `LiquidGlassExt` extension trait:
 
 ```rust
-use tauri_liquid_glass::{LiquidGlassExt, LiquidGlassConfig, GlassMaterialVariant};
+use tauri_plugin_liquid_glass::{LiquidGlassExt, LiquidGlassConfig, GlassMaterialVariant};
 
 // In a Tauri command or setup hook:
 #[tauri::command]

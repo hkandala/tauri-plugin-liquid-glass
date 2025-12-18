@@ -22,7 +22,7 @@ cd examples/liquid-glass-app && pnpm install && pnpm tauri dev
 
 ## Project Overview
 
-**tauri-liquid-glass** is a Tauri v2 plugin that provides macOS Liquid Glass effects for Tauri applications using native Objective-C APIs.
+**tauri-plugin-liquid-glass** is a Tauri v2 plugin that provides macOS Liquid Glass effects for Tauri applications using native Objective-C APIs.
 
 - **macOS 26+**: Uses private `NSGlassEffectView` API for the native Liquid Glass effect
 - **macOS 10.10-25**: Falls back to `NSVisualEffectView` with overlay-based tint
@@ -33,7 +33,7 @@ cd examples/liquid-glass-app && pnpm install && pnpm tauri dev
 ### Directory Structure
 
 ```
-tauri-liquid-glass/
+tauri-plugin-liquid-glass/
 ├── src/                      # Rust plugin source
 │   ├── lib.rs               # Plugin entry point, LiquidGlassExt trait, registers commands
 │   ├── desktop.rs           # LiquidGlass<R> struct with Rust API methods
@@ -196,8 +196,8 @@ pnpm tauri dev
 
 ## Repository Notes
 
-- **Package name (Rust)**: `tauri-liquid-glass`
-- **Package name (npm)**: `tauri-liquid-glass` (same)
+- **Package name (Rust)**: `tauri-plugin-liquid-glass`
+- **Package name (npm)**: `tauri-plugin-liquid-glass-api`
 - **Plugin identifier**: `liquid-glass`
 - **Minimum Rust version**: 1.77
 - **Tauri version**: 2.0
