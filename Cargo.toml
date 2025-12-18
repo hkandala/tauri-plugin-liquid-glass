@@ -1,6 +1,6 @@
 [package]
 name = "tauri-plugin-liquid-glass"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 description = "macOS 26+ Liquid Glass effect support for Tauri"
 license = "MIT"

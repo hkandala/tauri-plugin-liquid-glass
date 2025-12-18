@@ -1,6 +1,6 @@
 # tauri-plugin-liquid-glass
 
-![Demo](.github/demo.gif)
+![Demo GIF](https://raw.githubusercontent.com/hkandala/tauri-plugin-liquid-glass/refs/heads/main/.github/demo.gif)
 
 macOS 26+ Liquid Glass effect support for Tauri v2 applications.
 
@@ -28,7 +28,7 @@ Add the plugin to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tauri-plugin-liquid-glass = { git = "https://github.com/hkandala/tauri-plugin-liquid-glass" }
+tauri-plugin-liquid-glass = "0.1"
 ```
 
 ### JavaScript/TypeScript
