@@ -3676,7 +3676,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-liquid-glass"
-version = "0.1.1"
+version = "0.1.4"
 dependencies = [
  "cocoa",
  "dispatch",
