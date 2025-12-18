@@ -1,5 +1,5 @@
 [package]
-name = "tauri-liquid-glass"
+name = "tauri-plugin-liquid-glass"
 version = "0.1.0"
 edition = "2021"
 description = "macOS 26+ Liquid Glass effect support for Tauri"
@@ -8,7 +8,7 @@ repository = "https://github.com/hkandala/tauri-liquid-glass"
 keywords = ["tauri", "macos", "glass", "vibrancy", "liquid-glass"]
 categories = ["gui", "os::macos-apis"]
 rust-version = "1.77"
-links = "liquid-glass"
+links = "tauri-plugin-liquid-glass"
 exclude = ["/examples", "/dist", "/guest-js", "/node_modules"]
 
 [lib]

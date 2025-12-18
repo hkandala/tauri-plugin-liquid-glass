@@ -1,5 +1,5 @@
 {
-  "name": "tauri-liquid-glass",
+  "name": "tauri-plugin-liquid-glass-api",
   "version": "0.1.0",
   "description": "macOS 26+ Liquid Glass effect support for Tauri",
   "type": "module",
