@@ -122,7 +122,9 @@ function App() {
       <div className="hint-container">
         <div className="hint-icon">✦</div>
         <div className="hint-title">Liquid Glass</div>
-        <div className="hint-text">move the window around to see the effect</div>
+        <div className="hint-text">
+          move the window around to see the effect
+        </div>
       </div>
 
       {/* Floating control panel */}
