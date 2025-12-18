@@ -15,7 +15,7 @@ use crate::glass_effect;
 /// Access this struct through the [`LiquidGlassExt`](crate::LiquidGlassExt) trait:
 ///
 /// ```rust,no_run
-/// use tauri_liquid_glass::LiquidGlassExt;
+/// use tauri_plugin_liquid_glass::LiquidGlassExt;
 ///
 /// // In a Tauri command or setup hook:
 /// fn example(app: tauri::AppHandle, window: tauri::WebviewWindow) {
@@ -40,7 +40,7 @@ impl<R: Runtime> LiquidGlass<R> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// use tauri_liquid_glass::LiquidGlassExt;
+    /// use tauri_plugin_liquid_glass::LiquidGlassExt;
     ///
     /// fn check_support(app: tauri::AppHandle) {
     ///     let supported = app.liquid_glass().is_supported();
@@ -66,7 +66,7 @@ impl<R: Runtime> LiquidGlass<R> {
     /// # Example
     ///
     /// ```rust,no_run
-    /// use tauri_liquid_glass::{LiquidGlassExt, LiquidGlassConfig, GlassMaterialVariant};
+    /// use tauri_plugin_liquid_glass::{LiquidGlassExt, LiquidGlassConfig, GlassMaterialVariant};
     ///
     /// fn apply_glass(app: tauri::AppHandle, window: tauri::WebviewWindow) {
     ///     // Enable with default settings

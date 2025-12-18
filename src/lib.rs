@@ -7,10 +7,10 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use tauri_liquid_glass::LiquidGlassExt;
+//! use tauri_plugin_liquid_glass::LiquidGlassExt;
 //!
 //! tauri::Builder::default()
-//!     .plugin(tauri_liquid_glass::init())
+//!     .plugin(tauri_plugin_liquid_glass::init())
 //!     .setup(|app| {
 //!         // Access the plugin API via extension trait
 //!         let supported = app.liquid_glass().is_supported();
@@ -55,7 +55,7 @@ pub use models::*;
 /// # Example
 ///
 /// ```rust,no_run
-/// use tauri_liquid_glass::LiquidGlassExt;
+/// use tauri_plugin_liquid_glass::LiquidGlassExt;
 ///
 /// fn example(app: tauri::AppHandle, window: tauri::WebviewWindow) {
 ///     // Check if supported
@@ -85,10 +85,10 @@ impl<R: Runtime, T: Manager<R>> LiquidGlassExt<R> for T {
 /// # Example
 ///
 /// ```rust,no_run
-/// use tauri_liquid_glass::LiquidGlassExt;
+/// use tauri_plugin_liquid_glass::LiquidGlassExt;
 ///
 /// tauri::Builder::default()
-///     .plugin(tauri_liquid_glass::init())
+///     .plugin(tauri_plugin_liquid_glass::init())
 ///     .setup(|app| {
 ///         // Use the extension trait to access the API
 ///         let supported = app.liquid_glass().is_supported();
