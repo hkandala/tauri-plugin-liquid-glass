@@ -230,4 +230,3 @@ unsafe fn try_send_i64(obj: *mut Object, sel: Sel, value: i64) -> bool {
         false
     }
 }
-

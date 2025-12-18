@@ -236,4 +236,3 @@ unsafe fn find_webview(view: id) -> Option<id> {
 
     None
 }
-

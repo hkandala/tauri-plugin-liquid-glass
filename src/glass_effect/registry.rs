@@ -125,4 +125,3 @@ impl GlassViewRegistry {
             .map_err(|_| Error::RegistryLockFailed)
     }
 }
-

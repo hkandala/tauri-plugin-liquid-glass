@@ -3,3 +3,4 @@ target/
 node_modules/
 pnpm-lock.yaml
 *.md
+**/gen/
