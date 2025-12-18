@@ -47,6 +47,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hkandala/tauri-liquid-glass"
+    "url": "https://github.com/hkandala/tauri-plugin-liquid-glass"
   }
 }

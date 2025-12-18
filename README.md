@@ -26,7 +26,7 @@ Add the plugin to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tauri-plugin-liquid-glass = { git = "https://github.com/hkandala/tauri-liquid-glass" }
+tauri-plugin-liquid-glass = { git = "https://github.com/hkandala/tauri-plugin-liquid-glass" }
 ```
 
 ### JavaScript/TypeScript
