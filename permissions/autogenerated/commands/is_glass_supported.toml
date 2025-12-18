@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-is-glass-supported"
+description = "Enables the is_glass_supported command without any pre-configured scope."
+commands.allow = ["is_glass_supported"]
+
+[[permission]]
+identifier = "deny-is-glass-supported"
+description = "Denies the is_glass_supported command without any pre-configured scope."
+commands.deny = ["is_glass_supported"]
