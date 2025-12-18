@@ -35,4 +35,3 @@ jobs:
       - name: Build example app
         working-directory: examples/liquid-glass-app
         run: pnpm tauri build
-
