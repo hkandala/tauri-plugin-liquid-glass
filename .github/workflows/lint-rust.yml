@@ -1,0 +1,17 @@
+name: lint rust
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  clippy:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: run clippy
+        run: cargo clippy --all-targets -- -D warnings
