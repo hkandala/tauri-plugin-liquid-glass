@@ -1,5 +1,7 @@
 # tauri-plugin-liquid-glass
 
+![Demo](.github/demo.gif)
+
 macOS 26+ Liquid Glass effect support for Tauri v2 applications.
 
 This plugin provides native macOS Liquid Glass effects using the private `NSGlassEffectView` API available in macOS 26 (Tahoe) and later. On older macOS versions, it falls back to `NSVisualEffectView`.

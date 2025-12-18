@@ -14,8 +14,8 @@
     "windows": [
       {
         "title": "Liquid Glass App",
-        "width": 800,
-        "height": 600,
+        "width": 500,
+        "height": 350,
         "transparent": true,
         "decorations": true,
         "titleBarStyle": "Transparent"

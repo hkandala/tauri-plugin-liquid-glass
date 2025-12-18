@@ -38,13 +38,13 @@ const VARIANT_NAMES = [
 
 function App() {
   const [supported, setSupported] = useState<boolean | null>(null);
-  const [cornerRadius, setCornerRadius] = useState(24);
+  const [cornerRadius, setCornerRadius] = useState(50);
   const [tintEnabled, setTintEnabled] = useState(false);
   const [tintColor, setTintColor] = useState("#ffffff30");
   const [variant, setVariant] = useState<LiquidGlassConfig["variant"]>(
-    GlassMaterialVariant.Regular
+    GlassMaterialVariant.Bubbles
   );
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   // Apply glass effect whenever settings change
   const applyGlass = async (settings?: {
@@ -102,10 +102,10 @@ function App() {
 
   const reset = async () => {
     const defaults = {
-      cornerRadius: 24,
+      cornerRadius: 50,
       tintEnabled: false,
       tintColor: "#ffffff30",
-      variant: GlassMaterialVariant.Regular,
+      variant: GlassMaterialVariant.Bubbles,
     };
     setCornerRadius(defaults.cornerRadius);
     setTintEnabled(defaults.tintEnabled);
