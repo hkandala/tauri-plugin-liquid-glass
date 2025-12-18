@@ -61,3 +61,5 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
+# Claude
+.claude/internet-mode-used_*

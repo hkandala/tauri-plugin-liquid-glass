@@ -9,7 +9,7 @@ keywords = ["tauri", "macos", "glass", "vibrancy", "liquid-glass"]
 categories = ["gui", "os::macos-apis"]
 rust-version = "1.77"
 links = "tauri-plugin-liquid-glass"
-exclude = ["/examples", "/dist", "/guest-js", "/node_modules"]
+exclude = ["/examples", "/dist", "/node_modules"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
