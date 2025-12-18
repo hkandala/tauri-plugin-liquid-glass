@@ -5,7 +5,7 @@ import {
   isGlassSupported,
   GlassMaterialVariant,
   type LiquidGlassConfig,
-} from "tauri-liquid-glass";
+} from "tauri-plugin-liquid-glass-api";
 
 import "./App.css";
 

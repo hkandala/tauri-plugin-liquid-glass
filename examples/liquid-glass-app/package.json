@@ -14,7 +14,7 @@
     "react-dom": "^19.1.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
-    "tauri-liquid-glass": "link:../.."
+    "tauri-plugin-liquid-glass-api": "link:../.."
   },
   "devDependencies": {
     "@types/react": "^19.1.8",

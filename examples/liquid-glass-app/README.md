@@ -28,7 +28,7 @@ Add the liquid glass plugin and enable the `macos-private-api` feature for Tauri
 tauri = { version = "2", features = ["macos-private-api"] }
 
 # Add the liquid glass plugin
-tauri-liquid-glass = "0.1"
+tauri-plugin-liquid-glass = "0.1"
 ```
 
 ---
@@ -42,7 +42,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         // Add this line to register the liquid glass plugin
-        .plugin(tauri_liquid_glass::init())
+        .plugin(tauri_plugin_liquid_glass::init())
         .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -164,7 +164,7 @@ import {
   setLiquidGlassEffect,
   isGlassSupported,
   GlassMaterialVariant,
-} from "tauri-liquid-glass";
+} from "tauri-plugin-liquid-glass-api";
 
 function App() {
   useEffect(() => {
@@ -218,7 +218,7 @@ await setLiquidGlassEffect({ enabled: false });
 | File | Change |
 |------|--------|
 | `src-tauri/Cargo.toml` | Add `macos-private-api` feature and liquid-glass plugin |
-| `src-tauri/src/lib.rs` | Register `.plugin(tauri_liquid_glass::init())` |
+| `src-tauri/src/lib.rs` | Register `.plugin(tauri_plugin_liquid_glass::init())` |
 | `src-tauri/tauri.conf.json` | Add `macOSPrivateApi: true` and `transparent: true` |
 | `src-tauri/capabilities/default.json` | Add `liquid-glass:default` permission |
 | `index.html` | Make html/body/root backgrounds transparent |
