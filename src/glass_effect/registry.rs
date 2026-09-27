@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use cocoa::base::id;
+use super::types::id;
 
 use crate::error::{Error, Result};
 

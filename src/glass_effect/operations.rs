@@ -1,10 +1,10 @@
 //! Glass effect operations - create, update, remove
 
-use cocoa::base::{id, nil, NO, YES};
-use cocoa::foundation::NSRect;
 use log::warn;
-use objc::runtime::{Class, BOOL};
+use objc::runtime::{Class, BOOL, NO, YES};
 use objc::{class, msg_send, sel, sel_impl};
+
+use super::types::{id, nil, NSRect};
 
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 
