@@ -7,6 +7,7 @@
 mod backend;
 mod operations;
 mod registry;
+mod types;
 mod utils;
 
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};

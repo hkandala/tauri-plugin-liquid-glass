@@ -21,9 +21,9 @@
 //!     .expect("error while running tauri application");
 //! ```
 
-// The cocoa/objc crates are deprecated in favor of objc2, but objc2 requires
+// The objc crate is deprecated in favor of objc2, but objc2 requires
 // significant architectural changes (MainThreadMarker, strict Send/Sync) without
-// functional benefit. These crates remain fully functional for our use case.
+// functional benefit. It remains fully functional for our use case.
 #![allow(deprecated)]
 
 use tauri::{

@@ -1,15 +1,13 @@
 //! Glass backend implementations for different macOS versions
 
-use cocoa::appkit::{
-    NSViewHeightSizable, NSViewWidthSizable, NSVisualEffectBlendingMode, NSVisualEffectMaterial,
-    NSVisualEffectState,
-};
-use cocoa::base::{id, nil, NO, YES};
-use cocoa::foundation::NSRect;
-use objc::runtime::{Class, Object, Sel, BOOL};
+use objc::runtime::{Class, Object, Sel, BOOL, NO, YES};
 use objc::{class, msg_send, sel, sel_impl};
 
 use super::registry::ViewHandle;
+use super::types::{
+    id, nil, NSRect, NSViewHeightSizable, NSViewWidthSizable, NSVisualEffectBlendingMode,
+    NSVisualEffectMaterial, NSVisualEffectState,
+};
 use super::utils::glass_class_available;
 use crate::error::{Error, Result};
 

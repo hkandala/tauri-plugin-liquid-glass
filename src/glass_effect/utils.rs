@@ -1,9 +1,10 @@
 //! Utility functions for macOS native code
 
-use cocoa::base::id;
 use dispatch::Queue;
-use objc::runtime::{Class, BOOL};
+use objc::runtime::{Class, BOOL, NO};
 use objc::{class, msg_send, sel, sel_impl};
+
+use super::types::id;
 
 /// Execute a closure on the main thread synchronously.
 ///
@@ -34,7 +35,7 @@ where
 fn is_main_thread() -> bool {
     unsafe {
         let is_main: BOOL = msg_send![class!(NSThread), isMainThread];
-        is_main != cocoa::base::NO
+        is_main != NO
     }
 }
 

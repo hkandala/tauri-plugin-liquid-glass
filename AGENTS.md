@@ -45,6 +45,7 @@ tauri-plugin-liquid-glass/
 │       ├── backend.rs       # GlassBackend trait + NativeGlassBackend + VisualEffectBackend
 │       ├── operations.rs    # create/update/remove glass effect operations
 │       ├── registry.rs      # GlassViewRegistry for tracking views per window
+│       ├── types.rs         # Vendored FFI types (id, nil, NSRect, AppKit constants)
 │       └── utils.rs         # run_on_main_sync(), color_from_hex(), glass_class_available()
 ├── guest-js/                # TypeScript API
 │   ├── index.ts             # Exports isGlassSupported(), setLiquidGlassEffect()
@@ -62,6 +63,7 @@ tauri-plugin-liquid-glass/
 #### 1. Simplified API Design
 
 The plugin uses a **single command API** (`set_liquid_glass_effect`) that handles:
+
 - Creating new glass effects
 - Updating existing glass effects  
 - Removing glass effects (when `enabled: false`)
@@ -71,10 +73,12 @@ The plugin automatically manages state via `GlassViewRegistry` which tracks glas
 #### 2. Backend Pattern (Strategy Pattern)
 
 The `GlassBackend` trait abstracts differences between:
+
 - **NativeGlassBackend**: Uses `NSGlassEffectView` (macOS 26+)
 - **VisualEffectBackend**: Uses `NSVisualEffectView` (fallback)
 
 Key differences:
+
 - `NSGlassEffectView` has native `setTintColor:` support
 - `NSVisualEffectView` requires an overlay subview for tint colors
 - Only `NSGlassEffectView` supports material variants
@@ -82,30 +86,40 @@ Key differences:
 #### 3. Thread Safety
 
 All native NSView operations must run on the main thread. The plugin uses:
+
 - `run_on_main_sync()` - Dispatches closures to main thread via `dispatch::Queue::main()`
 - `ViewHandle(usize)` - Stores raw pointer addresses instead of `id` types for cross-thread safety
 
 #### 4. Objective-C Bridging
 
-Uses `objc` + `cocoa` crates (not the newer `objc2` ecosystem). These are technically deprecated but:
-- Remain fully functional for this use case
-- Avoid complexity of `objc2`'s `MainThreadMarker` and strict `Send`/`Sync` requirements
+Uses the `objc` crate (not the newer `objc2` ecosystem). It is technically deprecated but:
+
+- Remains fully functional for this use case
+- Avoids complexity of `objc2`'s `MainThreadMarker` and strict `Send`/`Sync` requirements
 - The `#![allow(deprecated)]` attribute suppresses related warnings
+
+The `cocoa` crate is intentionally NOT used: it depends on the unmaintained
+`block 0.1` crate, which triggers a Rust future-incompatibility warning
+("static of uninhabited type"). The few FFI types it provided (`id`, `nil`,
+`NSRect`, AppKit constants) are vendored in `src/glass_effect/types.rs`.
 
 ### Public API
 
 The plugin exposes both TypeScript and Rust APIs:
 
 **TypeScript** (`guest-js/index.ts`):
+
 - `isGlassSupported()` - Check if NSGlassEffectView is available
 - `setLiquidGlassEffect(config)` - Apply, update, or remove glass effect (auto-detects current window)
 
 **Rust** (`src/lib.rs` + `src/desktop.rs`):
+
 - `LiquidGlassExt` trait - Extension trait for `Manager` types (AppHandle, App, WebviewWindow)
 - `app.liquid_glass().is_supported()` - Check if NSGlassEffectView is available
 - `app.liquid_glass().set_effect(&window, config)` - Apply, update, or remove glass effect
 
 **Tauri Commands** (internal, called via invoke):
+
 - `plugin:liquid-glass|is_glass_supported`
 - `plugin:liquid-glass|set_liquid_glass_effect`
 
@@ -178,9 +192,9 @@ pnpm tauri dev
 
 ### Rust (macOS-specific)
 
-- `cocoa` - NSView, NSWindow, NSVisualEffectView bindings
 - `objc` - Objective-C runtime and message sending
 - `dispatch` - GCD queue for main thread dispatch
+- (vendored in `src/glass_effect/types.rs`: `id`, `nil`, `NSRect`, AppKit constants - previously from `cocoa`)
 
 ### Rust (Cross-platform)
 

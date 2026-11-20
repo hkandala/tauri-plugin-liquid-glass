@@ -1,6 +1,6 @@
 [package]
 name = "tauri-plugin-liquid-glass"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 description = "macOS 26+ Liquid Glass effect support for Tauri"
 license = "MIT"
@@ -27,10 +27,12 @@ thiserror = "2.0"
 log = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-# Note: cocoa/objc are deprecated in favor of objc2 ecosystem, but objc2 requires
+# Note: objc is deprecated in favor of the objc2 ecosystem, but objc2 requires
 # significant architectural changes (MainThreadMarker, strict Send/Sync) that add
-# complexity without functional benefit. These crates remain fully functional.
-cocoa = "0.26"
+# complexity without functional benefit. The `cocoa` crate is intentionally not
+# used - it depends on the unmaintained `block` crate, which triggers a Rust
+# future-incompatibility warning. The few needed types are vendored in
+# `src/glass_effect/types.rs` instead.
 objc = "0.2"
 dispatch = "0.2"
 
